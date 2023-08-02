@@ -68,9 +68,56 @@ my $s = Philo::Shader->new(
     height   => $HEIGHT,
     width    => $WIDTH,
     shader   => sub ($x, $y, $t) {
+        state $center_x = int($WIDTH  / 2);
+        state $center_y = int($HEIGHT / 2);
+
         if ($x == 0 && $y == 0) {
             $starfield->move_stars;
         }
+
+        my $xd = abs($center_x - $x);
+        my $yd = abs($center_y - $y);
+
+        # pink middle fin
+        if ( abs($center_x - $x + 4) < 2 && $yd < 1 ) {
+            return (0.9,0.4,0.6);
+        }
+        # main body
+        elsif ( $xd < 6 && $yd < 2 ) {
+            return (0.6,0.6,0.9);
+        }
+        # pink side fin
+        elsif ( abs($center_x - $x + 4) < 2 && $yd < 3 ) {
+            return (0.9,0.4,0.6);
+        }
+        # grey part before nose
+        elsif ( abs($center_x - $x - 2) < 8 && $yd < 2 ) {
+            return (0.3,0.4,0.6);
+        }
+        # grey nose
+        elsif ( abs($center_x - $x - 5) < 8 && $yd < 1 ) {
+            return (0.3,0.4,0.6);
+        }
+        # yellow windows
+        elsif ( abs($center_x - $x - 3) < 9 && $yd < 2 ) {
+            return (0.9,0.7,0.3);
+        }
+
+
+
+
+        #elsif ( $xd < 4 && $yd < 2 ) {
+        #    return (1,0.7,0.3);
+        #}
+        #elsif ( abs($center_x - $x + 1) < 3 && $yd < 3 ) {
+        #    return (0.7,0.9,1);
+        #}
+        #elsif ( $xd < 5 && $yd < 2 ) {
+        #    return (1,0.3,0.5);
+        #}
+        #elsif ( abs($center_x - $x + 2) < 2 && $yd < 4 ) {
+        #    return (1,1,0.3);
+        #}
 
         if ( my $f = $starfield->has_star_at( $y ) ) {
             my $h = $starfield->star_distance_at( $y );
@@ -80,8 +127,6 @@ my $s = Philo::Shader->new(
                 return ( $s, $s, 1 );
             }
         }
-
-        my $d = sqrt(($x*$x) + ($y*$y));
 
         return (
             0,
@@ -111,7 +156,7 @@ my $t = 0;
 while (1) {
     $s->draw( time );
     $frames++;
-    sleep(0.02);
+    sleep(0.01);
 }
 
 $s->show_cursor;
