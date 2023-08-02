@@ -75,6 +75,10 @@ my $s = Philo::Shader->new(
             $starfield->move_stars;
         }
 
+        # --------------------------------------------------
+        # BEGIN DRAW SHIP
+        # --------------------------------------------------
+
         my $xd = abs($center_x - $x);
         my $yd = abs($center_y - $y);
 
@@ -103,22 +107,11 @@ my $s = Philo::Shader->new(
             return (0.9,0.7,0.3);
         }
 
+        # --------------------------------------------------
+        # END DRAW SHIP
+        # --------------------------------------------------
 
-
-
-        #elsif ( $xd < 4 && $yd < 2 ) {
-        #    return (1,0.7,0.3);
-        #}
-        #elsif ( abs($center_x - $x + 1) < 3 && $yd < 3 ) {
-        #    return (0.7,0.9,1);
-        #}
-        #elsif ( $xd < 5 && $yd < 2 ) {
-        #    return (1,0.3,0.5);
-        #}
-        #elsif ( abs($center_x - $x + 2) < 2 && $yd < 4 ) {
-        #    return (1,1,0.3);
-        #}
-
+        # draw stars ...
         if ( my $f = $starfield->has_star_at( $y ) ) {
             my $h = $starfield->star_distance_at( $y );
             my $s = $starfield->star_speed_at( $y );
@@ -128,11 +121,8 @@ my $s = Philo::Shader->new(
             }
         }
 
-        return (
-            0,
-            0,
-            0
-        )
+        # draw the blackness of space
+        return ( 0, 0, 0 )
     }
 );
 
