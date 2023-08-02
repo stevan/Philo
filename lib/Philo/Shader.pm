@@ -34,10 +34,12 @@ class Philo::Shader {
         my @out;
         foreach my ($y1, $y2) ( 0 .. $height ) {
             push @out => ((map {
-                my $x = (($_ / $width ) * 2) - 1;
+                my $x = $_; #(($_ / $width ) * 2) - 1;
                 sprintf "\e[38;2;%d;%d;%d;48;2;%d;%d;%d;m▀\e" => map { 255 * $_ }
-                    $shader->( $x, ((($y1 / $height) * 2) - 1 ), $t ),
-                    $shader->( $x, ((($y2 / $height) * 2) - 1 ), $t ),
+                    #$shader->( $x, ((($y1 / $height) * 2) - 1 ), $t ),
+                    #$shader->( $x, ((($y2 / $height) * 2) - 1 ), $t ),
+                    $shader->( $x, $y1, $t ),
+                    $shader->( $x, $y2, $t ),
                 } @cols),
             $newline);
         }
