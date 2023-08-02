@@ -102,10 +102,6 @@ my $s = Philo::Shader->new(
         elsif ( abs($center_x - $x - 5) < 8 && $yd < 1 ) {
             return (0.3,0.4,0.6);
         }
-        # yellow windows
-        elsif ( abs($center_x - $x - 3) < 9 && $yd < 2 ) {
-            return (0.9,0.7,0.3);
-        }
 
         # --------------------------------------------------
         # END DRAW SHIP
