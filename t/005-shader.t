@@ -3,28 +3,26 @@
 use v5.38;
 
 use Time::HiRes qw[ sleep time ];
-use Math::Trig;
+use experimental qw[ class try builtin ];
+use builtin      qw[ ceil floor ];
 
 use Philo;
 
-my $height = 60;
-my $width  = 80;
+my $height = 100;
+my $width  = 100;
 
 my $s = Philo::Shader->new(
-    height   => $height,
-    width    => $width,
-    shader   => sub ($x, $y, $t) {
+    coord_system => Philo::Shader->CENTERED,
+    height       => $height,
+    width        => $width,
+    shader       => sub ($x, $y, $t) {
 
-        my $d = sqrt(($x*$x) + ($y*$y));
+        my $d  = sqrt(($x*$x) + ($y*$y));
+           $d *= 100;
 
-        return (
-            0,
-            0,
-            abs(
-                sin($t * 0.5 - $d * 2.5 + $y) +
-                sin($t * 0.9 - $d * 1.9 + $y)
-            ),
-        )
+        return map abs, $x * $y,0,0 if ($d % 5) == 0;
+
+        return 0,0,0;
     }
 );
 
@@ -48,6 +46,7 @@ my $t = 0;
 while (1) {
     $s->draw( time );
     $frames++;
+    #sleep(0.1);
 }
 
 $s->show_cursor;

@@ -11,9 +11,10 @@ my $height = 60;
 my $width  = 60;
 
 my $s = Philo::Shader->new(
-    height   => $height,
-    width    => $width,
-    shader   => sub ($x, $y, $t) {
+    coord_system => Philo::Shader->CENTERED,
+    height       => $height,
+    width        => $width,
+    shader       => sub ($x, $y, $t) {
 
         my $d = sqrt(($x*$x) + ($y*$y));
 

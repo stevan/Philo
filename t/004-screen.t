@@ -32,9 +32,10 @@ sub pallete ($t) {
 }
 
 my $s = Philo::Shader->new(
-    height   => $height,
-    width    => $width,
-    shader   => sub ($x, $y, $t) {
+    coord_system => Philo::Shader->CENTERED,
+    height       => $height,
+    width        => $width,
+    shader       => sub ($x, $y, $t) {
 
         my @final_color = (0, 0, 0);
 
