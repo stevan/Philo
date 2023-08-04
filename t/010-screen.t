@@ -29,7 +29,7 @@ class StarField {
     ADJUST {
         foreach (0 .. $num_stars) {
             my ($x, $y) =  (int(rand($width)), int(rand($height)));
-            $stars{"${x}:${y}"} = [ $x, $y, rand ];
+            $stars{"${x}:${y}"} = [ $x, $y, rand, rand ];
         }
 
         $self->set_direction( LEFT );
@@ -46,22 +46,29 @@ class StarField {
         foreach my $coord ( @coords ) {
             my $star = $stars{ $coord };
 
-            my ($x, $y, $speed) = @$star;
+            my ($x, $y, $mass, $velocity) = @$star;
 
-            my $velocity = ceil( $speed * 2 );
+            my $momentum = $mass + $velocity * 10;
+               $momentum = ceil($momentum * 0.5);
 
-            $y += $velocity if $direction == UP;
-            $y -= $velocity if $direction == DOWN;
-            $x -= $velocity if $direction == RIGHT;
-            $x += $velocity if $direction == LEFT;
+            $y += $momentum if $direction == UP;
+            $y -= $momentum if $direction == DOWN;
+            $x -= $momentum if $direction == RIGHT;
+            $x += $momentum if $direction == LEFT;
 
-               if ( $x < 0       ) { $x = $width;  $star->[2] = rand; }
-            elsif ( $x > $width  ) { $x = 0;       $star->[2] = rand; }
-               if ( $y < 0       ) { $y = $height; $star->[2] = rand; }
-            elsif ( $y > $height ) { $y = 0;       $star->[2] = rand; }
+            my $reset;
+
+               if ( $x < 0       ) { $x = $width;  $reset++; }
+            elsif ( $x > $width  ) { $x = 0;       $reset++; }
+               if ( $y < 0       ) { $y = $height; $reset++; }
+            elsif ( $y > $height ) { $y = 0;       $reset++; }
 
             $star->[0] = $x;
             $star->[1] = $y;
+            if ($reset) {
+                $star->[2] = rand;
+                $star->[3] = rand;
+            }
 
             $stars{"${x}:${y}"} = delete $stars{ $coord };
         }
@@ -123,7 +130,7 @@ class Animation :isa(Stella::Actor) {
         );
 
         $starfield = StarField->new(
-            num_stars => 100,
+            num_stars => 120,
             width     => $width,
             height    => $height,
         );
@@ -181,7 +188,7 @@ class Animation :isa(Stella::Actor) {
         my $start  = time;
 
         $animation_timer = $ctx->add_interval(
-            timeout  => 0.0,
+            timeout  => 0.03,
             callback => sub {
                 $starfield->move_stars;
                 $shader->draw( time );
