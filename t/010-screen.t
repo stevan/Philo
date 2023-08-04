@@ -9,8 +9,8 @@ use Data::Dumper;
 use Stella;
 use Philo;
 
-my $HEIGHT = 60;
-my $WIDTH  = 80;
+my $HEIGHT = 80;
+my $WIDTH  = 120;
 
 class StarField {
 
@@ -19,95 +19,71 @@ class StarField {
     use constant RIGHT => 3;
     use constant LEFT  => 4;
 
-    field @speed;
-    field @mass;
-    field @stars;
-    field @distance;
-
-    field $freq   :param;
-    field $width  :param;
-    field $height :param;
-
-    # direction specific stuff
     field $direction;
-    field @indicies;
-    field $limit;
+    field %stars;
+
+    field $num_stars :param;
+    field $width     :param;
+    field $height    :param;
 
     ADJUST {
-        @indicies = 0 .. $width;
-
-        @distance = map { int(rand) } @indicies;
-        @speed    = map { rand } @indicies;
-        @mass     = map { rand } @indicies;
-        @stars    = map { $self->make_star } @indicies;
+        foreach (0 .. $num_stars) {
+            my ($x, $y) =  (int(rand($width)), int(rand($height)));
+            $stars{"${x}:${y}"} = [ $x, $y, rand ];
+        }
 
         $self->set_direction( LEFT );
     }
 
-    method make_star { rand() > $freq ? 1 : 0 }
+    method set_direction ($dir) { $direction = $dir }
 
-    method has_star_at ($x, $y) {
-        $stars[$direction == UP || $direction == DOWN ? $x : $y ];
-    }
-
-    method star_distance_at ($x, $y) {
-        $distance[ $direction == UP || $direction == DOWN ? $x : $y ]
-    }
-
-    method star_speed_at ($x, $y) {
-        $speed[ $direction == UP || $direction == DOWN ? $x : $y ]
-    }
-
-    method star_coord_at ($x, $y) {
-        return $y if $direction == UP   || $direction == DOWN;
-        return $x if $direction == LEFT || $direction == RIGHT;
-    }
-
-    method set_direction ($dir) {
-        $direction = $dir;
-
-        if ($direction == UP || $direction == DOWN) {
-            $limit = $height;
-        }
-        elsif ($direction == LEFT || $direction == RIGHT) {
-            $limit = $width;
-        }
-        else {
-            die "Unknown Direction: $direction";
-        }
-    }
+    method has_star_at      ($x, $y) { exists $stars{"${x}:${y}"} }
+    method star_distance_at ($x, $y) { $stars{"${x}:${y}"}->[2]   }
 
     method move_stars {
+        my @coords = keys %stars;
 
-        foreach my $i ( @indicies ) {
-            if ( $stars[$i] ) {
-                my $velocity = ceil( $speed[$i] + $mass[$i] * 2 );
+        foreach my $coord ( @coords ) {
+            my $star = $stars{ $coord };
 
-                if ($direction == UP || $direction == LEFT) {
-                    $distance[$i] += $velocity;
-                }
-                elsif ($direction == DOWN || $direction == RIGHT) {
-                    $distance[$i] -= $velocity;
-                }
-                else {
-                    die "Unknown Direction: $direction";
-                }
+            my ($x, $y, $speed) = @$star;
 
-                if ( $distance[$i] <= 0 ) {
-                    $stars   [$i] = $self->make_star;
-                    $distance[$i] = $limit;
-                    $speed   [$i] = rand;
-                }
-                elsif ( $distance[$i] >= $limit ) {
-                    $stars   [$i] = $self->make_star;
-                    $distance[$i] = 0;
-                    $speed   [$i] = rand;
-                }
-            }
-            else {
-                $stars[$i] = $self->make_star;
-            }
+            my $velocity = ceil( $speed * 2 );
+
+            $y += $velocity if $direction == UP;
+            $y -= $velocity if $direction == DOWN;
+            $x -= $velocity if $direction == RIGHT;
+            $x += $velocity if $direction == LEFT;
+
+               if ( $x < 0       ) { $x = $width;  $star->[2] = rand; }
+            elsif ( $x > $width  ) { $x = 0;       $star->[2] = rand; }
+               if ( $y < 0       ) { $y = $height; $star->[2] = rand; }
+            elsif ( $y > $height ) { $y = 0;       $star->[2] = rand; }
+
+            $star->[0] = $x;
+            $star->[1] = $y;
+
+            $stars{"${x}:${y}"} = delete $stars{ $coord };
         }
+    }
+}
+
+class Sprite {
+
+    field $bitmap :param;
+
+    field $top    :param;
+    field $left   :param;
+    field $bottom :param;
+    field $right  :param;
+
+    method height { $bottom - $top }
+    method width  { $right - $left }
+
+    method draw_at ($x, $y) {
+        return unless $y >= $top  && $y <= $bottom;
+        return unless $x >= $left && $x <= $right;
+        return $bitmap->[$y - $top]->[$x - $left];
     }
 }
 
@@ -115,7 +91,8 @@ class Animation :isa(Stella::Actor) {
     use Test::More;
     use Stella::Util::Debug;
 
-    use Time::HiRes qw[ sleep time ];
+    use Time::HiRes qw[ time ];
+    use List::Util  qw[ shuffle ];
     use Term::ReadKey;
     use Data::Dumper;
 
@@ -123,6 +100,7 @@ class Animation :isa(Stella::Actor) {
     field $width  :param;
     field $stdin  :param = \*STDIN;
 
+    field $spaceship;
     field $starfield;
     field $shader;
     field $animation_timer;
@@ -132,63 +110,40 @@ class Animation :isa(Stella::Actor) {
     ADJUST {
         $logger = Stella::Util::Debug->logger if LOG_LEVEL;
 
+        $spaceship = Sprite->new(
+            top    => ($height / 2) - 5,
+            left   => ($width  / 2) - 5,
+            bottom => ($height / 2) + 5,
+            right  => ($width  / 2) + 5,
+            bitmap => [
+                map {
+                    [map { [$_,$_*0.5,$_*0.6] } map { rand } 0 .. 10 ]
+                } 0 .. 10
+            ]
+        );
+
         $starfield = StarField->new(
-            freq   => 0.9,
-            width  => $width  + 1,
-            height => $height + 1,
+            num_stars => 100,
+            width     => $width,
+            height    => $height,
         );
 
         $shader = Philo::Shader->new(
             height   => $height,
             width    => $width,
             shader   => sub ($x, $y, $t) {
-                # --------------------------------------------------
-                # BEGIN DRAW SHIP
-                # --------------------------------------------------
 
-                state $center_x = int($width  / 2);
-                state $center_y = int($height / 2);
-
-                my $xd = abs($center_x - $x);
-                my $yd = abs($center_y - $y);
-
-                # pink middle fin
-                if ( abs($center_x - $x + 4) < 2 && $yd < 1 ) {
-                    return (0.9,0.4,0.6);
+                if ( my $c = $spaceship->draw_at( $x, $y ) ) {
+                    return @$c;
                 }
-                # main body
-                elsif ( $xd < 6 && $yd < 2 ) {
-                    return (0.6,0.6,0.9);
-                }
-                # pink side fin
-                elsif ( abs($center_x - $x + 4) < 2 && $yd < 3 ) {
-                    return (0.9,0.4,0.6);
-                }
-                # grey part before nose
-                elsif ( abs($center_x - $x - 2) < 8 && $yd < 2 ) {
-                    return (0.3,0.4,0.6);
-                }
-                # grey nose
-                elsif ( abs($center_x - $x - 5) < 8 && $yd < 1 ) {
-                    return (0.3,0.4,0.6);
-                }
-
-                # --------------------------------------------------
-                # END DRAW SHIP
-                # --------------------------------------------------
 
                 # draw stars ...
-                if ( my $f = $starfield->has_star_at( $x, $y ) ) {
-                    my $h = $starfield->star_distance_at( $x, $y );
-                    my $s = $starfield->star_speed_at( $x, $y );
-
-                    if ( $starfield->star_coord_at( $x, $y ) == $h ) {
-                        return ( $s, $s, 1 );
-                    }
+                if ( $starfield->has_star_at( $x, $y ) ) {
+                    my $s = $starfield->star_distance_at( $x, $y );
+                    return ( $s, $s, $s );
                 }
-
                 # draw the blackness of space
-                return ( 0.2, 0.2, 0.2 )
+                return (0,0,0)
             }
         );
     }
@@ -211,8 +166,6 @@ class Animation :isa(Stella::Actor) {
         $direction = $starfield->LEFT  if $message eq "\e[D";
 
         $starfield->set_direction( $direction );
-
-        warn "Hey, going $direction\n";
     }
 
     # handlers ...
@@ -228,7 +181,7 @@ class Animation :isa(Stella::Actor) {
         my $start  = time;
 
         $animation_timer = $ctx->add_interval(
-            timeout  => 0.03,
+            timeout  => 0.0,
             callback => sub {
                 $starfield->move_stars;
                 $shader->draw( time );
@@ -275,4 +228,6 @@ sub init ($ctx) {
 Stella::ActorSystem->new( init => \&init )->loop;
 
 
+
+__END__
 
