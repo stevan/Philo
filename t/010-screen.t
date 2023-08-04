@@ -12,6 +12,20 @@ use Philo;
 my $HEIGHT = 80;
 my $WIDTH  = 120;
 
+## ----------------------------------------------------------------------------
+## Starfield
+## ----------------------------------------------------------------------------
+## This keeps track of
+##   - direction of travel
+##   - a set of stars in the field
+## For of every star we keep track of:
+##   - current position
+##   - current mass
+##   - curent velocity
+## When a star reaches the edge, it is reclaimed and a new star
+## takes it's place in the field.
+## ----------------------------------------------------------------------------
+
 class StarField {
 
     use constant UP    => 1;
@@ -19,36 +33,47 @@ class StarField {
     use constant RIGHT => 3;
     use constant LEFT  => 4;
 
-    field $direction;
-    field %stars;
+    field $direction; # UP, DOWN, RIGHT or LEFT
+    field %stars;     # HashRef["$x:$y"] = [ $x, $y, $m, $v ]
 
     field $num_stars :param;
     field $width     :param;
     field $height    :param;
 
     ADJUST {
+        # create the stars
         foreach (0 .. $num_stars) {
             my ($x, $y) =  (int(rand($width)), int(rand($height)));
+            # we key them by x/y coords ...
             $stars{"${x}:${y}"} = [ $x, $y, rand, rand ];
         }
 
-        $self->set_direction( LEFT );
+        # set the default direction
+        $direction = LEFT;
     }
+
 
     method set_direction ($dir) { $direction = $dir }
 
     method has_star_at      ($x, $y) { exists $stars{"${x}:${y}"} }
-    method star_distance_at ($x, $y) { $stars{"${x}:${y}"}->[2]   }
+    method star_mass_at     ($x, $y) { $stars{"${x}:${y}"}->[2]   }
+    method star_velocity_at ($x, $y) { $stars{"${x}:${y}"}->[3]   }
+
+    method star_distance_at ($x, $y) {
+        my $star = $stars{"${x}:${y}"};
+        return ($star->[2] + $star->[3] * 10);
+    }
 
     method move_stars {
         my @coords = keys %stars;
 
+        my %s;
         foreach my $coord ( @coords ) {
             my $star = $stars{ $coord };
 
             my ($x, $y, $mass, $velocity) = @$star;
 
-            my $momentum = $mass + $velocity * 10;
+            my $momentum = $mass + $velocity * 5;
                $momentum = ceil($momentum * 0.5);
 
             $y += $momentum if $direction == UP;
@@ -70,8 +95,10 @@ class StarField {
                 $star->[3] = rand;
             }
 
-            $stars{"${x}:${y}"} = delete $stars{ $coord };
+            $s{"${x}:${y}"} = $stars{ $coord };
         }
+
+        %stars = %s;
     }
 }
 
@@ -130,7 +157,7 @@ class Animation :isa(Stella::Actor) {
         );
 
         $starfield = StarField->new(
-            num_stars => 120,
+            num_stars => 200,
             width     => $width,
             height    => $height,
         );
