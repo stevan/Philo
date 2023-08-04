@@ -66,17 +66,23 @@ class Animation :isa(Stella::Actor) {
     use Stella::Util::Debug;
 
     use Time::HiRes qw[ sleep time ];
+    use Term::ReadKey;
     use Data::Dumper;
 
     field $height :param;
     field $width  :param;
+    field $stdin  :param = \*STDIN;
 
     field $starfield;
     field $shader;
     field $animation_timer;
-    field $input_watcher;
 
     field $logger;
+
+    our $UP    = 1;
+    our $LEFT  = 2;
+    our $DOWN  = 3;
+    our $RIGHT = 4;
 
     ADJUST {
         $logger = Stella::Util::Debug->logger if LOG_LEVEL;
@@ -142,17 +148,34 @@ class Animation :isa(Stella::Actor) {
         );
     }
 
+    # ... methods
+
+    method capture_keypress {
+        my $message = ReadKey -1, $stdin;
+        return unless $message;
+
+        if ( $message eq "\e" ) {
+            $message .= ReadKey -1, $stdin;
+            $message .= ReadKey -1, $stdin;
+        }
+
+        my $direction;
+        $direction = $UP    if $message eq "\e[A";
+        $direction = $LEFT  if $message eq "\e[D";
+        $direction = $DOWN  if $message eq "\e[B";
+        $direction = $RIGHT if $message eq "\e[C";
+
+        warn "Hey, going $direction\n";
+    }
+
+    # handlers ...
+
     method Start ($ctx, $message) {
 
         $shader->clear_screen;
         $shader->hide_cursor;
 
-        #$input_watcher = $ctx->add_watcher(
-        #    fh       => \*STDIN,
-        #    poll     => 'r',
-        #    callback => sub ($fh) {
-        #    }
-        #);
+        ReadMode cbreak => $stdin;
 
         my $frames = 0;
         my $start  = time;
@@ -162,14 +185,18 @@ class Animation :isa(Stella::Actor) {
             callback => sub {
                 $starfield->move_stars;
                 $shader->draw( time );
+                $self->capture_keypress;
+
                 $frames++;
             }
         );
 
         $SIG{INT} = sub {
+            ReadMode restore => $stdin;
+            $shader->show_cursor;
+
             my $dur = time - $start;
             my $fps = $frames / $dur;
-            $shader->show_cursor;
 
             say "\n\nInteruptted!";
             say "Frames: $frames time: $dur fps: $fps";
@@ -178,9 +205,12 @@ class Animation :isa(Stella::Actor) {
     }
 
     method Stop ($ctx, $message) {
+        ReadMode restore => $stdin;
         $shader->show_cursor;
         $animation_timer->cancel;
     }
+
+    # behavior
 
     method behavior {
         Stella::Behavior::Method->new( allowed => [ *Start, *Stop ] );
