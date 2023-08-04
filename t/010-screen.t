@@ -4,9 +4,9 @@ use v5.38;
 use experimental qw[ class try builtin ];
 use builtin      qw[ ceil floor ];
 
-use Time::HiRes qw[ sleep time ];
 use Data::Dumper;
 
+use Stella;
 use Philo;
 
 my $HEIGHT = 60;
@@ -59,91 +59,144 @@ class StarField {
             }
         }
     }
-
 }
 
-my $starfield = StarField->new( freq => 0.9, width => $WIDTH + 1, height => $HEIGHT + 1 );
+class Animation :isa(Stella::Actor) {
+    use Test::More;
+    use Stella::Util::Debug;
 
-my $s = Philo::Shader->new(
-    height   => $HEIGHT,
-    width    => $WIDTH,
-    shader   => sub ($x, $y, $t) {
-        state $center_x = int($WIDTH  / 2);
-        state $center_y = int($HEIGHT / 2);
+    use Time::HiRes qw[ sleep time ];
+    use Data::Dumper;
 
-        if ($x == 0 && $y == 0) {
-            $starfield->move_stars;
-        }
+    field $height :param;
+    field $width  :param;
 
-        # --------------------------------------------------
-        # BEGIN DRAW SHIP
-        # --------------------------------------------------
+    field $starfield;
+    field $shader;
+    field $animation_timer;
+    field $input_watcher;
 
-        my $xd = abs($center_x - $x);
-        my $yd = abs($center_y - $y);
+    field $logger;
 
-        # pink middle fin
-        if ( abs($center_x - $x + 4) < 2 && $yd < 1 ) {
-            return (0.9,0.4,0.6);
-        }
-        # main body
-        elsif ( $xd < 6 && $yd < 2 ) {
-            return (0.6,0.6,0.9);
-        }
-        # pink side fin
-        elsif ( abs($center_x - $x + 4) < 2 && $yd < 3 ) {
-            return (0.9,0.4,0.6);
-        }
-        # grey part before nose
-        elsif ( abs($center_x - $x - 2) < 8 && $yd < 2 ) {
-            return (0.3,0.4,0.6);
-        }
-        # grey nose
-        elsif ( abs($center_x - $x - 5) < 8 && $yd < 1 ) {
-            return (0.3,0.4,0.6);
-        }
+    ADJUST {
+        $logger = Stella::Util::Debug->logger if LOG_LEVEL;
 
-        # --------------------------------------------------
-        # END DRAW SHIP
-        # --------------------------------------------------
+        $starfield = StarField->new(
+            freq   => 0.9,
+            width  => $width  + 1,
+            height => $height + 1,
+        );
 
-        # draw stars ...
-        if ( my $f = $starfield->has_star_at( $y ) ) {
-            my $h = $starfield->star_distance_at( $y );
-            my $s = $starfield->star_speed_at( $y );
+        $shader = Philo::Shader->new(
+            height   => $height,
+            width    => $width,
+            shader   => sub ($x, $y, $t) {
+                # --------------------------------------------------
+                # BEGIN DRAW SHIP
+                # --------------------------------------------------
 
-            if ( $x == $h ) {
-                return ( $s, $s, 1 );
+                state $center_x = int($width  / 2);
+                state $center_y = int($height / 2);
+
+                my $xd = abs($center_x - $x);
+                my $yd = abs($center_y - $y);
+
+                # pink middle fin
+                if ( abs($center_x - $x + 4) < 2 && $yd < 1 ) {
+                    return (0.9,0.4,0.6);
+                }
+                # main body
+                elsif ( $xd < 6 && $yd < 2 ) {
+                    return (0.6,0.6,0.9);
+                }
+                # pink side fin
+                elsif ( abs($center_x - $x + 4) < 2 && $yd < 3 ) {
+                    return (0.9,0.4,0.6);
+                }
+                # grey part before nose
+                elsif ( abs($center_x - $x - 2) < 8 && $yd < 2 ) {
+                    return (0.3,0.4,0.6);
+                }
+                # grey nose
+                elsif ( abs($center_x - $x - 5) < 8 && $yd < 1 ) {
+                    return (0.3,0.4,0.6);
+                }
+
+                # --------------------------------------------------
+                # END DRAW SHIP
+                # --------------------------------------------------
+
+                # draw stars ...
+                if ( my $f = $starfield->has_star_at( $y ) ) {
+                    my $h = $starfield->star_distance_at( $y );
+                    my $s = $starfield->star_speed_at( $y );
+
+                    if ( $x == $h ) {
+                        return ( $s, $s, 1 );
+                    }
+                }
+
+                # draw the blackness of space
+                return ( 0, 0, 0 )
             }
-        }
-
-        # draw the blackness of space
-        return ( 0, 0, 0 )
+        );
     }
-);
 
-my $frames = 0;
-my $start  = time;
+    method Start ($ctx, $message) {
 
-$SIG{INT} = sub {
-    my $dur = time - $start;
-    my $fps = $frames / $dur;
-    $s->show_cursor;
+        $shader->clear_screen;
+        $shader->hide_cursor;
 
-    say "\n\nInteruptted!";
-    say "Frames: $frames time: $dur fps: $fps";
-    die "Goodbye";
-};
+        #$input_watcher = $ctx->add_watcher(
+        #    fh       => \*STDIN,
+        #    poll     => 'r',
+        #    callback => sub ($fh) {
+        #    }
+        #);
 
-$s->clear_screen;
-$s->hide_cursor;
+        my $frames = 0;
+        my $start  = time;
 
-my $t = 0;
-while (1) {
-    $s->draw( time );
-    $frames++;
-    sleep(0.01);
+        $animation_timer = $ctx->add_interval(
+            timeout  => 0.03,
+            callback => sub {
+                $starfield->move_stars;
+                $shader->draw( time );
+                $frames++;
+            }
+        );
+
+        $SIG{INT} = sub {
+            my $dur = time - $start;
+            my $fps = $frames / $dur;
+            $shader->show_cursor;
+
+            say "\n\nInteruptted!";
+            say "Frames: $frames time: $dur fps: $fps";
+            die "Goodbye";
+        };
+    }
+
+    method Stop ($ctx, $message) {
+        $shader->show_cursor;
+        $animation_timer->cancel;
+    }
+
+    method behavior {
+        Stella::Behavior::Method->new( allowed => [ *Start, *Stop ] );
+    }
 }
 
-$s->show_cursor;
+sub init ($ctx) {
+    my $Animation = $ctx->spawn( Animation->new( height => $HEIGHT, width => $WIDTH ) );
+    $ctx->send( $Animation, Stella::Event->new( symbol => *Animation::Start ) );
+}
+
+# -----------------------------------------------------------------------------
+# Lets-ago!
+# -----------------------------------------------------------------------------
+
+Stella::ActorSystem->new( init => \&init )->loop;
+
+
 
