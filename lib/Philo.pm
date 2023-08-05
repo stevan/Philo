@@ -6,6 +6,8 @@ use Philo::Color;
 use Philo::Shader;
 use Philo::Sprite;
 
+use Philo::Tools::Direction;
+
 1;
 
 __END__

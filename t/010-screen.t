@@ -26,14 +26,9 @@ my $WIDTH  = 120;
 ## takes it's place in the field.
 ## ----------------------------------------------------------------------------
 
-class StarField {
+class Starfield {
 
-    use constant UP    => 1;
-    use constant DOWN  => 2;
-    use constant RIGHT => 3;
-    use constant LEFT  => 4;
-
-    field $direction; # UP, DOWN, RIGHT or LEFT
+    field $direction; # Philo::Tools::Direction
     field %stars;     # HashRef["$x:$y"] = [ $x, $y, $m, $v ]
 
     field $num_stars :param;
@@ -48,12 +43,14 @@ class StarField {
             $stars{"${x}:${y}"} = [ $x, $y, rand, rand ];
         }
 
-        # set the default direction
-        $direction = LEFT;
+        # set the default direction (LEFT)
+        $direction = Philo::Tools::Direction->new;
     }
 
-
-    method set_direction ($dir) { $direction = $dir }
+    method go_up    { $direction->to_up    }
+    method go_down  { $direction->to_down  }
+    method go_right { $direction->to_right }
+    method go_left  { $direction->to_left  }
 
     method has_star_at      ($p) { my ($x, $y) = $p->xy; exists $stars{"${x}:${y}"} }
     method star_mass_at     ($p) { my ($x, $y) = $p->xy; $stars{"${x}:${y}"}->[2]   }
@@ -77,10 +74,10 @@ class StarField {
             my $momentum = $mass + $velocity * 5;
                $momentum = ceil($momentum * 0.5);
 
-            $y += $momentum if $direction == UP;
-            $y -= $momentum if $direction == DOWN;
-            $x -= $momentum if $direction == RIGHT;
-            $x += $momentum if $direction == LEFT;
+            $y += $momentum if $direction->is_up;
+            $y -= $momentum if $direction->is_down;
+            $x -= $momentum if $direction->is_right;
+            $x += $momentum if $direction->is_left;
 
             my $reset;
 
@@ -101,6 +98,70 @@ class StarField {
 
         %stars = %s;
     }
+}
+
+## ----------------------------------------------------------------------------
+## Spaceship
+## ----------------------------------------------------------------------------
+## Keeps track of the actual sprite, its location and orientation
+## ----------------------------------------------------------------------------
+
+class Spaceship {
+
+    # location
+    field $top  :param;
+    field $left :param;
+
+    field $sprite; # the "spaceship" sprite
+
+    ADJUST {
+
+        # create the spite ...
+
+        state $i; # empty
+
+        # Eyes, Nose, Mouth
+        state $e = Philo::Color->new( r => 0.1, g => 0.5, b => 0.7 );
+        state $n = Philo::Color->new( r => 0.5, g => 0.1, b => 0.3 );
+        state $m = Philo::Color->new( r => 0.3, g => 0.2, b => 0.1 );
+
+        # Whiskers
+        state $W = Philo::Color->new( r => 0.2, g => 0.2, b => 0.2 );
+
+        # Dark, Medium, Light
+        state $D = Philo::Color->new( r => 0.5, g => 0.3, b => 0.1 );
+        state $M = Philo::Color->new( r => 0.8, g => 0.5, b => 0.1 );
+        state $L = Philo::Color->new( r => 0.9, g => 0.7, b => 0.1 );
+
+        # build the sprite
+        $sprite = Philo::Sprite->new(
+            top    => $top,
+            left   => $left,
+            bitmap => [
+                [ $i,$i,$i,$i,$M,$i,$i,$i,$i,$i,$M,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i],
+                [ $i,$i,$i,$D,$L,$D,$i,$i,$i,$D,$L,$D,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i],
+                [ $i,$i,$i,$M,$L,$L,$M,$D,$M,$L,$L,$L,$D,$M,$M,$D,$D,$i,$i,$i,$i,$i],
+                [ $i,$i,$M,$L,$L,$L,$M,$L,$M,$L,$L,$L,$L,$M,$M,$L,$M,$M,$D,$i,$i,$i],
+                [ $W,$W,$W,$L,$L,$L,$M,$L,$M,$L,$L,$L,$W,$W,$M,$L,$M,$M,$L,$D,$i,$i],
+                [ $i,$i,$M,$L,$e,$L,$L,$n,$L,$L,$e,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$i],
+                [ $W,$W,$L,$L,$L,$L,$m,$m,$m,$L,$L,$L,$W,$W,$L,$L,$L,$L,$L,$L,$M,$i],
+                [ $i,$M,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
+                [ $i,$M,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
+                [ $i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
+                [ $i,$i,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$L,$L,$M],
+                [ $i,$i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$D,$M,$M,$L,$D,$i],
+                [ $i,$i,$i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$M,$L,$M,$L,$M,$i,$i],
+                [ $i,$i,$i,$i,$D,$D,$M,$M,$M,$M,$M,$M,$M,$M,$M,$D,$M,$D,$D,$i,$i,$i],
+            ]
+        );
+    }
+
+    method draw_at ($p) { $sprite->draw_at( $p ) }
+
+    method go_up    { $sprite->flip   if     $sprite->is_flipped  }
+    method go_down  { $sprite->flip   unless $sprite->is_flipped  }
+    method go_right { $sprite->mirror unless $sprite->is_mirrored }
+    method go_left  { $sprite->mirror if     $sprite->is_mirrored }
 }
 
 ## ----------------------------------------------------------------------------
@@ -129,47 +190,14 @@ class Animation :isa(Stella::Actor) {
         $logger = Stella::Util::Debug->logger if LOG_LEVEL;
 
         # Create the Spaceship Sprite
-        {
-            my $i; # empty
-
-            # Eyes, Nose, Mouth
-            my $e = Philo::Color->new( r => 0.1, g => 0.5, b => 0.7 );
-            my $n = Philo::Color->new( r => 0.5, g => 0.1, b => 0.3 );
-            my $m = Philo::Color->new( r => 0.3, g => 0.2, b => 0.1 );
-
-            # Whiskers
-            my $W = Philo::Color->new( r => 0.2, g => 0.2, b => 0.2 );
-
-            # Dark, Medium, Light
-            my $D = Philo::Color->new( r => 0.5, g => 0.3, b => 0.1 );
-            my $M = Philo::Color->new( r => 0.8, g => 0.5, b => 0.1 );
-            my $L = Philo::Color->new( r => 0.9, g => 0.7, b => 0.1 );
-
-            $spaceship = Philo::Sprite->new(
-                top    => ($height / 2) - 5,
-                left   => ($width  / 2) - 10,
-                bitmap => [
-                    [ $i,$i,$i,$i,$M,$i,$i,$i,$i,$i,$M,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i],
-                    [ $i,$i,$i,$D,$L,$D,$i,$i,$i,$D,$L,$D,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i],
-                    [ $i,$i,$i,$M,$L,$L,$M,$D,$M,$L,$L,$L,$D,$M,$M,$D,$D,$i,$i,$i,$i,$i],
-                    [ $i,$i,$M,$L,$L,$L,$M,$L,$M,$L,$L,$L,$L,$M,$M,$L,$M,$M,$D,$i,$i,$i],
-                    [ $W,$W,$W,$L,$L,$L,$M,$L,$M,$L,$L,$L,$W,$W,$M,$L,$M,$M,$L,$D,$i,$i],
-                    [ $i,$i,$M,$L,$e,$L,$L,$n,$L,$L,$e,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$i],
-                    [ $W,$W,$L,$L,$L,$L,$m,$m,$m,$L,$L,$L,$W,$W,$L,$L,$L,$L,$L,$L,$M,$i],
-                    [ $i,$M,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
-                    [ $i,$M,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
-                    [ $i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
-                    [ $i,$i,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$L,$L,$M],
-                    [ $i,$i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$D,$M,$M,$L,$D,$i],
-                    [ $i,$i,$i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$M,$L,$M,$L,$M,$i,$i],
-                    [ $i,$i,$i,$i,$D,$D,$M,$M,$M,$M,$M,$M,$M,$M,$M,$D,$M,$D,$D,$i,$i,$i],
-                ]
-            );
-        }
+        $spaceship = Spaceship->new(
+            top  => ($height / 2) - 5,
+            left => ($width  / 2) - 10,
+        );
 
         # Create the Starfield
-        $starfield = StarField->new(
-            num_stars => 255,
+        $starfield = Starfield->new(
+            num_stars => 500,
             width     => $width,
             height    => $height,
         );
@@ -213,20 +241,10 @@ class Animation :isa(Stella::Actor) {
             $message .= ReadKey -1, $stdin;
         }
 
-        my $direction;
-        $direction = $starfield->UP    if $message eq "\e[A";
-        $direction = $starfield->DOWN  if $message eq "\e[B";
-        $direction = $starfield->RIGHT if $message eq "\e[C";
-        $direction = $starfield->LEFT  if $message eq "\e[D";
-
-        if ($direction == $starfield->LEFT || $direction == $starfield->RIGHT) {
-            $spaceship->mirror;
-        }
-        elsif ($direction == $starfield->UP || $direction == $starfield->DOWN) {
-            $spaceship->flip;
-        }
-
-        $starfield->set_direction( $direction );
+        map { $_->go_up    } ($starfield, $spaceship) if $message eq "\e[A";
+        map { $_->go_down  } ($starfield, $spaceship) if $message eq "\e[B";
+        map { $_->go_right } ($starfield, $spaceship) if $message eq "\e[C";
+        map { $_->go_left  } ($starfield, $spaceship) if $message eq "\e[D";
     }
 
     # handlers ...
@@ -254,6 +272,7 @@ class Animation :isa(Stella::Actor) {
         $SIG{INT} = sub {
             ReadMode restore => $stdin;
             $shader->show_cursor;
+            $animation_timer->cancel;
 
             my $dur = time - $start;
             my $fps = $frames / $dur;
@@ -264,16 +283,10 @@ class Animation :isa(Stella::Actor) {
         };
     }
 
-    method Stop ($ctx, $message) {
-        ReadMode restore => $stdin;
-        $shader->show_cursor;
-        $animation_timer->cancel;
-    }
-
     # behavior
 
     method behavior {
-        Stella::Behavior::Method->new( allowed => [ *Start, *Stop ] );
+        Stella::Behavior::Method->new( allowed => [ *Start ] );
     }
 }
 
