@@ -57,14 +57,12 @@ class Starfield {
     method draw_at ($p) {
         my ($x, $y) = $p->xy;
 
-        my $star = $stars{"${x}:${y}"};
-
-        if ( $star ) {
+        if ( my $star = $stars{"${x}:${y}"} ) {
             my $s = ($star->[2] + $star->[3] * 10);
             return Philo::Color->new(
-                r => $s * 0.9,
-                g => $s * 0.9,
-                b => $s * 0.9,
+                r => $s * 0.9553,
+                g => $s * 0.9553,
+                b => $s * 0.9559,
             );
         }
     }
