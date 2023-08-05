@@ -52,14 +52,19 @@ class Starfield {
     method go_right { $direction->to_right }
     method go_left  { $direction->to_left  }
 
-    method has_star_at      ($p) { my ($x, $y) = $p->xy; exists $stars{"${x}:${y}"} }
-    method star_mass_at     ($p) { my ($x, $y) = $p->xy; $stars{"${x}:${y}"}->[2]   }
-    method star_velocity_at ($p) { my ($x, $y) = $p->xy; $stars{"${x}:${y}"}->[3]   }
-
-    method star_distance_at ($p) {
+    method draw_at ($p) {
         my ($x, $y) = $p->xy;
+
         my $star = $stars{"${x}:${y}"};
-        return ($star->[2] + $star->[3] * 10);
+
+        if ( $star ) {
+            my $s = ($star->[2] + $star->[3] * 10);
+            return Philo::Color->new(
+                r => $s * 0.9,
+                g => $s * 0.9,
+                b => $s * 0.9,
+            );
+        }
     }
 
     method move_stars {
@@ -215,13 +220,8 @@ class Animation :isa(Stella::Actor) {
                 }
 
                 # draw stars ...
-                if ( $starfield->has_star_at( $p ) ) {
-                    my $s = $starfield->star_distance_at( $p );
-                    return Philo::Color->new(
-                        r => $s * 0.9,
-                        g => $s * 0.9,
-                        b => $s * 0.9,
-                    );
+                if ( my $c = $starfield->draw_at( $p ) ) {
+                    return $c;
                 }
 
                 # draw the blackness of space
