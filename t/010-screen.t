@@ -119,6 +119,16 @@ class Sprite {
         return unless $x >= $left && $x <= $right;
         return $bitmap->[$y - $top]->[$x - $left];
     }
+
+    method mirror {
+        foreach my $row ($bitmap->@*) {
+            @$row = reverse @$row;
+        }
+    }
+
+    method flip {
+        $bitmap->@* = reverse $bitmap->@*;
+    }
 }
 
 class Animation :isa(Stella::Actor) {
@@ -144,20 +154,45 @@ class Animation :isa(Stella::Actor) {
     ADJUST {
         $logger = Stella::Util::Debug->logger if LOG_LEVEL;
 
-        $spaceship = Sprite->new(
-            top    => ($height / 2) - 5,
-            left   => ($width  / 2) - 5,
-            bottom => ($height / 2) + 5,
-            right  => ($width  / 2) + 5,
-            bitmap => [
-                map {
-                    [map { [$_,$_*0.5,$_*0.6] } map { rand } 0 .. 10 ]
-                } 0 .. 10
-            ]
-        );
+        {
+            my $i;
+
+            my $e = [0.1,0.5,0.7];
+            my $n = [0.5,0.1,0.3];
+            my $m = [0.3,0.2,0.1];
+
+            my $W = [0.2,0.2,0.2];
+
+            my $D = [0.5,0.3,0.1];
+            my $M = [0.8,0.5,0.1];
+            my $L = [0.9,0.7,0.1];
+
+            $spaceship = Sprite->new(
+                top    => ($height / 2) - 5,
+                left   => ($width  / 2) - 10,
+                bottom => ($height / 2) + 10,
+                right  => ($width  / 2) + 11,
+                bitmap => [
+                    [ $i,$i,$i,$i,$M,$i,$i,$i,$i,$i,$M,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i],
+                    [ $i,$i,$i,$D,$L,$D,$i,$i,$i,$D,$L,$D,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i],
+                    [ $i,$i,$i,$M,$L,$L,$M,$D,$M,$L,$L,$L,$D,$M,$M,$D,$D,$i,$i,$i,$i,$i],
+                    [ $i,$i,$M,$L,$L,$L,$M,$L,$M,$L,$L,$L,$L,$M,$M,$L,$M,$M,$D,$i,$i,$i],
+                    [ $W,$W,$W,$L,$L,$L,$M,$L,$M,$L,$L,$L,$W,$W,$M,$L,$M,$M,$L,$D,$i,$i],
+                    [ $i,$i,$M,$L,$e,$L,$L,$n,$L,$L,$e,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$i],
+                    [ $W,$W,$L,$L,$L,$L,$m,$m,$m,$L,$L,$L,$W,$W,$L,$L,$L,$L,$L,$L,$M,$i],
+                    [ $i,$M,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
+                    [ $i,$M,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
+                    [ $i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D],
+                    [ $i,$i,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$L,$L,$M],
+                    [ $i,$i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$D,$M,$M,$L,$D,$i],
+                    [ $i,$i,$i,$D,$L,$L,$L,$L,$L,$L,$L,$L,$L,$L,$D,$M,$L,$M,$L,$M,$i,$i],
+                    [ $i,$i,$i,$i,$D,$D,$M,$M,$M,$M,$M,$M,$M,$M,$M,$D,$M,$D,$D,$i,$i,$i],
+                ]
+            );
+        }
 
         $starfield = StarField->new(
-            num_stars => 200,
+            num_stars => 255,
             width     => $width,
             height    => $height,
         );
@@ -174,7 +209,7 @@ class Animation :isa(Stella::Actor) {
                 # draw stars ...
                 if ( $starfield->has_star_at( $x, $y ) ) {
                     my $s = $starfield->star_distance_at( $x, $y );
-                    return ( $s, $s, $s );
+                    return ( $s*0.9, $s*0.9, $s*0.9 );
                 }
                 # draw the blackness of space
                 return (0,0,0)
@@ -198,6 +233,13 @@ class Animation :isa(Stella::Actor) {
         $direction = $starfield->DOWN  if $message eq "\e[B";
         $direction = $starfield->RIGHT if $message eq "\e[C";
         $direction = $starfield->LEFT  if $message eq "\e[D";
+
+        if ($direction == $starfield->LEFT || $direction == $starfield->RIGHT) {
+            $spaceship->mirror;
+        }
+        elsif ($direction == $starfield->UP || $direction == $starfield->DOWN) {
+            $spaceship->flip;
+        }
 
         $starfield->set_direction( $direction );
     }
