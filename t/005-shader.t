@@ -12,83 +12,11 @@ use Philo;
 my $HEIGHT = 60;
 my $WIDTH  = 60;
 
-class StarField {
-    field @indicies;
-
-    field @speed;
-    field @mass;
-    field @stars;
-    field @distance;
-
-    field $freq   :param;
-    field $width  :param;
-    field $height :param;
-
-    ADJUST {
-        @indicies = 0 .. $width;
-
-        @distance = map { int(rand) } @indicies;
-        @speed    = map { rand } @indicies;
-        @mass     = map { rand } @indicies;
-        @stars    = map {
-            $_ % 2 == 0
-                ? $self->make_star
-                : 0
-        } @indicies;
-    }
-
-    method make_star { rand() > $freq ? 1 : 0 }
-
-    method has_star_at      ($i) { $stars   [$i] }
-    method star_distance_at ($i) { $distance[$i] }
-    method star_speed_at    ($i) { $speed   [$i] }
-
-    method move_stars {
-        foreach my $i (@indicies) {
-            if ( $stars[$i] ) {
-                $distance[$i] += ceil( $speed[$i] + $mass[$i] * 2 );
-
-                if ( $distance[$i] >= $width ) {
-                    $stars   [$i] = $self->make_star;
-                    $distance[$i] = 0;
-                    $speed   [$i] = rand;
-                }
-            }
-            else {
-                $stars[$i] = $self->make_star;
-            }
-        }
-    }
-
-}
-
-my $starfield = StarField->new( freq => 0.9, width => $WIDTH + 1, height => $HEIGHT + 1 );
-
 my $s = Philo::Shader->new(
-    coord_system => Philo::Shader->CENTERED,
-    height   => $HEIGHT,
-    width    => $WIDTH,
-    shader   => sub ($x, $y, $t) {
-
-        my $d = sqrt(($x*$x) + ($y*$y));
-           $d = int($d * $HEIGHT);
-
-
-
-        warn $d;
-
-        # draw stars ...
-        if ( my $f = $starfield->has_star_at( $d ) ) {
-            my $h = $starfield->star_distance_at( $d );
-            my $s = $starfield->star_speed_at( $d );
-
-            if ( $x == $h ) {
-                return ( $s, $s, 1 );
-            }
-        }
-
-        # draw the blackness of space
-        return ( 0, 0, 0 )
+    height => $HEIGHT,
+    width  => $WIDTH,
+    shader => sub ($p, $t) {
+        return Philo::Color->new( r => 0, g => 0, b => 0 );
     }
 );
 

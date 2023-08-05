@@ -35,11 +35,13 @@ my $s = Philo::Shader->new(
     coord_system => Philo::Shader->CENTERED,
     height       => $height,
     width        => $width,
-    shader       => sub ($x, $y, $t) {
+    shader       => sub ($p, $t) {
+
+        my ($x, $y) = $p->xy;
 
         my @final_color = (0, 0, 0);
 
-        my $d0 = sqrt(($x*$x) + ($y*$y));
+        my $d0 = $p->distance;
 
         for( my $i = 0.0; $i < 1.0; $i++ ) {
 
@@ -74,10 +76,10 @@ my $s = Philo::Shader->new(
             $final_color[2] += $color[2] * $d;
         }
 
-        return (
-            max( 0, min( 1.0, $final_color[0] ) ),
-            max( 0, min( 1.0, $final_color[1] ) ),
-            max( 0, min( 1.0, $final_color[2] ) ),
+        return Philo::Color->new(
+            r => max( 0, min( 1.0, $final_color[0] ) ),
+            g => max( 0, min( 1.0, $final_color[1] ) ),
+            b => max( 0, min( 1.0, $final_color[2] ) ),
         )
     }
 );

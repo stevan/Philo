@@ -14,14 +14,15 @@ my $s = Philo::Shader->new(
     coord_system => Philo::Shader->CENTERED,
     height       => $height,
     width        => $width,
-    shader       => sub ($x, $y, $t) {
+    shader       => sub ($p, $t) {
 
-        my $d = sqrt(($x*$x) + ($y*$y));
+        my $d = $p->distance;
+        my ($x, $y) = $p->xy;
 
-        return (
-            abs(sin($t * 1.0 - $d * 1.0 + $x * $y)),
-            abs(sin($t * 1.0 - $d * 1.0 + $x)),
-            abs(cos($t * 5.0 - $d * 0.3 + $y)),
+        return Philo::Color->new(
+            r => abs(sin($t * 1.0 - $d * 1.0 + $x * $y)),
+            g => abs(sin($t * 1.0 - $d * 1.0 + $x)),
+            b => abs(cos($t * 5.0 - $d * 0.3 + $y)),
         )
     }
 );
@@ -46,6 +47,7 @@ my $t = 0;
 while (1) {
     $s->draw( time );
     $frames++;
+    last if $frames == 500;
 }
 
 $s->show_cursor;

@@ -1,6 +1,6 @@
 
 use v5.38;
-use experimental qw/ class try /;
+use experimental qw[ class ];
 
 class Philo::Point {
     field $x :param;
@@ -12,12 +12,11 @@ class Philo::Point {
     method xy { $x, $y }
     method yx { $y, $x }
 
-    method add ($p) { Philo::Point->new( x => $x + $p->x, y => $y + $p->y ) }
-    method sub ($p) { Philo::Point->new( x => $x - $p->x, y => $y - $p->y ) }
-
     method distance { sqrt(($x*$x) + ($y*$y)) }
 
     method equals ($p) { $x == $p->x && $y == $p->y }
+
+    method clone ($p) { Philo::Point->new( x => $x, y => $y ) }
 }
 
 __END__

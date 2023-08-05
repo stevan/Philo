@@ -55,11 +55,12 @@ class StarField {
 
     method set_direction ($dir) { $direction = $dir }
 
-    method has_star_at      ($x, $y) { exists $stars{"${x}:${y}"} }
-    method star_mass_at     ($x, $y) { $stars{"${x}:${y}"}->[2]   }
-    method star_velocity_at ($x, $y) { $stars{"${x}:${y}"}->[3]   }
+    method has_star_at      ($p) { my ($x, $y) = $p->xy; exists $stars{"${x}:${y}"} }
+    method star_mass_at     ($p) { my ($x, $y) = $p->xy; $stars{"${x}:${y}"}->[2]   }
+    method star_velocity_at ($p) { my ($x, $y) = $p->xy; $stars{"${x}:${y}"}->[3]   }
 
-    method star_distance_at ($x, $y) {
+    method star_distance_at ($p) {
+        my ($x, $y) = $p->xy;
         my $star = $stars{"${x}:${y}"};
         return ($star->[2] + $star->[3] * 10);
     }
@@ -103,41 +104,6 @@ class StarField {
 }
 
 ## ----------------------------------------------------------------------------
-## Sprite
-## ----------------------------------------------------------------------------
-## This is just a simple generic one for now
-## ----------------------------------------------------------------------------
-
-class Sprite {
-
-    field $bitmap :param;
-
-    field $top    :param;
-    field $left   :param;
-    field $bottom :param;
-    field $right  :param;
-
-    method height { $bottom - $top }
-    method width  { $right - $left }
-
-    method draw_at ($x, $y) {
-        return unless $y >= $top  && $y <= $bottom;
-        return unless $x >= $left && $x <= $right;
-        return $bitmap->[$y - $top]->[$x - $left];
-    }
-
-    method mirror {
-        foreach my $row ($bitmap->@*) {
-            @$row = reverse @$row;
-        }
-    }
-
-    method flip {
-        $bitmap->@* = reverse $bitmap->@*;
-    }
-}
-
-## ----------------------------------------------------------------------------
 ## Main Animation Actor
 ## ----------------------------------------------------------------------------
 
@@ -162,24 +128,26 @@ class Animation :isa(Stella::Actor) {
     ADJUST {
         $logger = Stella::Util::Debug->logger if LOG_LEVEL;
 
+        # Create the Spaceship Sprite
         {
-            my $i;
+            my $i; # empty
 
-            my $e = [0.1,0.5,0.7];
-            my $n = [0.5,0.1,0.3];
-            my $m = [0.3,0.2,0.1];
+            # Eyes, Nose, Mouth
+            my $e = Philo::Color->new( r => 0.1, g => 0.5, b => 0.7 );
+            my $n = Philo::Color->new( r => 0.5, g => 0.1, b => 0.3 );
+            my $m = Philo::Color->new( r => 0.3, g => 0.2, b => 0.1 );
 
-            my $W = [0.2,0.2,0.2];
+            # Whiskers
+            my $W = Philo::Color->new( r => 0.2, g => 0.2, b => 0.2 );
 
-            my $D = [0.5,0.3,0.1];
-            my $M = [0.8,0.5,0.1];
-            my $L = [0.9,0.7,0.1];
+            # Dark, Medium, Light
+            my $D = Philo::Color->new( r => 0.5, g => 0.3, b => 0.1 );
+            my $M = Philo::Color->new( r => 0.8, g => 0.5, b => 0.1 );
+            my $L = Philo::Color->new( r => 0.9, g => 0.7, b => 0.1 );
 
-            $spaceship = Sprite->new(
+            $spaceship = Philo::Sprite->new(
                 top    => ($height / 2) - 5,
                 left   => ($width  / 2) - 10,
-                bottom => ($height / 2) + 10,
-                right  => ($width  / 2) + 11,
                 bitmap => [
                     [ $i,$i,$i,$i,$M,$i,$i,$i,$i,$i,$M,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i],
                     [ $i,$i,$i,$D,$L,$D,$i,$i,$i,$D,$L,$D,$i,$i,$i,$i,$i,$i,$i,$i,$i,$i],
@@ -199,28 +167,37 @@ class Animation :isa(Stella::Actor) {
             );
         }
 
+        # Create the Starfield
         $starfield = StarField->new(
             num_stars => 255,
             width     => $width,
             height    => $height,
         );
 
+        # ... setup the shader that will draw everything
         $shader = Philo::Shader->new(
             height   => $height,
             width    => $width,
-            shader   => sub ($x, $y, $t) {
+            shader   => sub ($p, $t) {
+                state $VOID = Philo::Color->new( r => 0, g => 0, b => 0);
 
-                if ( my $c = $spaceship->draw_at( $x, $y ) ) {
-                    return @$c;
+                # draw the spaceship
+                if ( my $c = $spaceship->draw_at( $p ) ) {
+                    return $c;
                 }
 
                 # draw stars ...
-                if ( $starfield->has_star_at( $x, $y ) ) {
-                    my $s = $starfield->star_distance_at( $x, $y );
-                    return ( $s*0.9, $s*0.9, $s*0.9 );
+                if ( $starfield->has_star_at( $p ) ) {
+                    my $s = $starfield->star_distance_at( $p );
+                    return Philo::Color->new(
+                        r => $s * 0.9,
+                        g => $s * 0.9,
+                        b => $s * 0.9,
+                    );
                 }
+
                 # draw the blackness of space
-                return (0,0,0)
+                return $VOID;
             }
         );
     }
