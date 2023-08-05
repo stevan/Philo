@@ -32,8 +32,7 @@ class WaveAnimation {
 
         $v /= scalar @waves;
 
-        return unless ceil(abs($p->y * $height)) == ceil(abs($v * $height));
-        return abs($p->y) - abs($v);
+        return ceil(abs($p->y * $height)) <=> ceil(abs($v * $height));
     }
 
     method sin ( $a, $f, $t ) {
@@ -46,30 +45,45 @@ class WaveAnimation {
 }
 
 my $w = WaveAnimation->new( height => $HEIGHT * 0.5 );
-$w->add_wave( $_, rand(2), rand )
-    #foreach 'sin';
-    foreach (shuffle(map { ('sin', 'cos') } (0 .. 16)));
+$w->add_wave( $_, rand(1), rand )
+    foreach (shuffle(map { ('sin', 'cos') } (0 .. 4)));
+
+my $w2 = WaveAnimation->new( height => $HEIGHT * 0.5 );
+$w2->add_wave( $_, rand(2), rand )
+    foreach (shuffle(map { ('sin', 'cos') } (0 .. 4)));
+
+my $w3 = WaveAnimation->new( height => $HEIGHT * 0.5 );
+$w3->add_wave( $_, rand(3), rand )
+    foreach (shuffle(map { ('sin', 'cos') } (0 .. 4)));
 
 my $s = Philo::Shader->new(
     coord_system => Philo::Shader->CENTERED,
     height       => $HEIGHT,
     width        => $WIDTH,
     shader       => sub ($p, $t) {
+        state $ground    = Philo::Color->new( r => 0.5, g => 0.5, b => 0.1 );
+        state $sky       = Philo::Color->new( r => 0.3, g => 0.5, b => 0.8 );
+        state $mountain1 = Philo::Color->new( r => 0.3, g => 0.3, b => 0.2 );
+        state $mountain2 = Philo::Color->new( r => 0.1, g => 0.3, b => 0.5 );
+        state $mountain3 = Philo::Color->new( r => 0.1, g => 0.5, b => 0.4 );
 
+        # waterline
+        #if ($p->y > 0.01 && $p->y < 0.02) {
+        #    return $ground;
+        #}
 
-        return Philo::Color->new( r => 0.5, g => 0.5, b => 0.1 ) if $p->y > 0;
+        return $ground if $p->y > 0;
 
-        if (my $i = $w->draw_at( $p, $t )) {
-            return Philo::Color->new(
-                r => 0.3,
-                g => 0.3,
-                b => 0.1,
-            );
-        }
+        my $i1 = $w->draw_at( $p, $t );
+        return $mountain1 if $i1 <= 0;
 
-        return Philo::Color->new( r => 0.3, g => 0.5, b => 0.8 ) if $p->y < 0;
+        my $i2 = $w2->draw_at( $p, $t * 0.6 );
+        return $mountain2 if $i2 <= 0;
 
+        my $i3 = $w3->draw_at( $p, $t * 0.3 );
+        return $mountain3 if $i3 <= 0;
 
+        return $sky;
     }
 );
 
