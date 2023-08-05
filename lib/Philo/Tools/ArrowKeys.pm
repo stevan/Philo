@@ -17,8 +17,8 @@ class Philo::Tools::ArrowKeys {
     field @recievers;
 
     method add_reciever ($r) {
-        #$r->roles::DOES('Philo::Roles::Oriented')
-        #    || confess "Receivers must do the Oriented role ($r)";
+        $r->roles::DOES('Philo::Roles::Oriented')
+            || confess "Receivers must do the Oriented role ($r)";
         push @recievers => $r;
         $self;
     }

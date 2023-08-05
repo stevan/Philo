@@ -35,6 +35,8 @@ use Philo::Tools::ArrowKeys;
 ## be used sparingly and carefully.
 ## --------------------------------------------------------
 
+use roles ();
+
 use Philo::Roles::Drawable;
 use Philo::Roles::Oriented;
 

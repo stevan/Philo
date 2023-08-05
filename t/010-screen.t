@@ -27,8 +27,8 @@ my $WIDTH  = 120;
 ## ----------------------------------------------------------------------------
 
 class Starfield {
-    #use roles 'Philo::Roles::Drawable',
-    #          'Philo::Roles::Oriented';
+    use roles 'Philo::Roles::Drawable',
+              'Philo::Roles::Oriented';
 
     field $direction; # Philo::Tools::Direction
     field %stars;     # HashRef["$x:$y"] = [ $x, $y, $m, $v ]
@@ -114,8 +114,8 @@ class Starfield {
 ## ----------------------------------------------------------------------------
 
 class Spaceship {
-    #use roles 'Philo::Roles::Drawable',
-    #          'Philo::Roles::Oriented';
+    use roles 'Philo::Roles::Drawable',
+              'Philo::Roles::Oriented';
 
     # location
     field $top  :param;
