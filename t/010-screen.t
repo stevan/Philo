@@ -27,6 +27,8 @@ my $WIDTH  = 120;
 ## ----------------------------------------------------------------------------
 
 class Starfield {
+    use roles 'Philo::Roles::Drawable',
+              'Philo::Roles::Moveable';
 
     field $direction; # Philo::Tools::Direction
     field %stars;     # HashRef["$x:$y"] = [ $x, $y, $m, $v ]
@@ -112,6 +114,8 @@ class Starfield {
 ## ----------------------------------------------------------------------------
 
 class Spaceship {
+    use roles 'Philo::Roles::Drawable',
+              'Philo::Roles::Moveable';
 
     # location
     field $top  :param;
@@ -161,12 +165,12 @@ class Spaceship {
         );
     }
 
-    method draw_at ($p) { $sprite->draw_at( $p ) }
-
     method go_up    { $sprite->flip   if     $sprite->is_flipped  }
     method go_down  { $sprite->flip   unless $sprite->is_flipped  }
     method go_right { $sprite->mirror unless $sprite->is_mirrored }
     method go_left  { $sprite->mirror if     $sprite->is_mirrored }
+
+    method draw_at ($p) { $sprite->draw_at( $p ) }
 }
 
 ## ----------------------------------------------------------------------------
