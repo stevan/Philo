@@ -19,6 +19,7 @@ use Philo::Sprite;
 ## --------------------------------------------------------
 
 use Philo::Tools::Direction;
+use Philo::Tools::ArrowKeys;
 
 ## --------------------------------------------------------
 ## Roles
@@ -35,7 +36,7 @@ use Philo::Tools::Direction;
 ## --------------------------------------------------------
 
 use Philo::Roles::Drawable;
-use Philo::Roles::Moveable;
+use Philo::Roles::Oriented;
 
 1;
 

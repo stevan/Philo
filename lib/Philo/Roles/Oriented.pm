@@ -1,7 +1,7 @@
 use v5.38;
 use experimental qw[ class ];
 
-class Philo::Roles::Moveable {
+class Philo::Roles::Oriented {
     method go_up;
     method go_down;
     method go_right;

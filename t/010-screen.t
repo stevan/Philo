@@ -27,8 +27,8 @@ my $WIDTH  = 120;
 ## ----------------------------------------------------------------------------
 
 class Starfield {
-    use roles 'Philo::Roles::Drawable',
-              'Philo::Roles::Moveable';
+    #use roles 'Philo::Roles::Drawable',
+    #          'Philo::Roles::Oriented';
 
     field $direction; # Philo::Tools::Direction
     field %stars;     # HashRef["$x:$y"] = [ $x, $y, $m, $v ]
@@ -114,8 +114,8 @@ class Starfield {
 ## ----------------------------------------------------------------------------
 
 class Spaceship {
-    use roles 'Philo::Roles::Drawable',
-              'Philo::Roles::Moveable';
+    #use roles 'Philo::Roles::Drawable',
+    #          'Philo::Roles::Oriented';
 
     # location
     field $top  :param;
@@ -182,7 +182,6 @@ class Animation :isa(Stella::Actor) {
     use Stella::Util::Debug;
 
     use Time::HiRes qw[ time ];
-    use Term::ReadKey;
 
     field $height :param;
     field $width  :param;
@@ -192,6 +191,7 @@ class Animation :isa(Stella::Actor) {
     field $starfield;       # though this
     field $shader;          # this draws it all
     field $animation_timer; # this manages it all
+    field $arrow_keys;      # Philo::Tools::ArrowKeys instance
 
     field $logger;
 
@@ -206,10 +206,14 @@ class Animation :isa(Stella::Actor) {
 
         # Create the Starfield
         $starfield = Starfield->new(
-            num_stars => 500,
+            num_stars => 200,
             width     => $width,
             height    => $height,
         );
+
+        $arrow_keys = Philo::Tools::ArrowKeys->new( fh => $stdin );
+        $arrow_keys->add_reciever( $spaceship );
+        $arrow_keys->add_reciever( $starfield );
 
         # ... setup the shader that will draw everything
         $shader = Philo::Shader->new(
@@ -234,53 +238,37 @@ class Animation :isa(Stella::Actor) {
         );
     }
 
-    # ... methods
-
-    method capture_keypress {
-        my $message = ReadKey -1, $stdin;
-        return unless $message;
-
-        if ( $message eq "\e" ) {
-            $message .= ReadKey -1, $stdin;
-            $message .= ReadKey -1, $stdin;
-        }
-
-        map { $_->go_up    } ($starfield, $spaceship) if $message eq "\e[A";
-        map { $_->go_down  } ($starfield, $spaceship) if $message eq "\e[B";
-        map { $_->go_right } ($starfield, $spaceship) if $message eq "\e[C";
-        map { $_->go_left  } ($starfield, $spaceship) if $message eq "\e[D";
-    }
-
     # handlers ...
 
     method Start ($ctx, $message) {
 
         $shader->clear_screen;
-        $shader->hide_cursor;
 
-        ReadMode cbreak => $stdin;
+        $shader->hide_cursor;
+        $shader->enable_alt_buffer;
+        $arrow_keys->turn_echo_off;
 
         my $frames = 0;
         my $start  = time;
-
         $animation_timer = $ctx->add_interval(
-            timeout  => 0.03,
+            timeout  => 0.001, # this essentially gets rounded down to 0
             callback => sub {
+                $arrow_keys->capture_keypress;
                 $starfield->move_stars;
                 $shader->draw( time );
-                $self->capture_keypress;
                 $frames++;
             }
         );
 
         $SIG{INT} = sub {
-            ReadMode restore => $stdin;
             $shader->show_cursor;
+            $shader->disable_alt_buffer;
+            $arrow_keys->turn_echo_on;
+
             $animation_timer->cancel;
 
             my $dur = time - $start;
             my $fps = $frames / $dur;
-
             say "\n\nInteruptted!";
             say "Frames: $frames time: $dur fps: $fps";
             die "Goodbye";
