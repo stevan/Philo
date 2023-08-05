@@ -102,6 +102,12 @@ class StarField {
     }
 }
 
+## ----------------------------------------------------------------------------
+## Sprite
+## ----------------------------------------------------------------------------
+## This is just a simple generic one for now
+## ----------------------------------------------------------------------------
+
 class Sprite {
 
     field $bitmap :param;
@@ -131,23 +137,25 @@ class Sprite {
     }
 }
 
+## ----------------------------------------------------------------------------
+## Main Animation Actor
+## ----------------------------------------------------------------------------
+
 class Animation :isa(Stella::Actor) {
-    use Test::More;
+    use Data::Dumper;
     use Stella::Util::Debug;
 
     use Time::HiRes qw[ time ];
-    use List::Util  qw[ shuffle ];
     use Term::ReadKey;
-    use Data::Dumper;
 
     field $height :param;
     field $width  :param;
     field $stdin  :param = \*STDIN;
 
-    field $spaceship;
-    field $starfield;
-    field $shader;
-    field $animation_timer;
+    field $spaceship;       # you fly this
+    field $starfield;       # though this
+    field $shader;          # this draws it all
+    field $animation_timer; # this manages it all
 
     field $logger;
 
