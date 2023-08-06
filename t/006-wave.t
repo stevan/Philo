@@ -105,9 +105,16 @@ $s->hide_cursor;
 
 my $t = 0;
 while (1) {
-    $s->draw( time );
-    $frames++;
+    my $t = time;
+    $s->draw( $t );
+    my $d = (time() - $t);
+    say "avg fps  : " . $frames / ($t - $start);
+    say "cur fps  : " . (1 / $d);
+    say "duration : " . $d;
+    say "frames   : " . $frames++;
+    say "now      : " . $t;
     #sleep(0.03);
+    #last; # if $frames == $WIDTH;
 }
 
 $s->show_cursor;
