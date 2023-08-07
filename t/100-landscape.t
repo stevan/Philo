@@ -68,9 +68,9 @@ my $s = Philo::Shader->new(
             height => $HEIGHT * 0.5,
             color  => Philo::Color->new( r => 0.3, g => 0.3, b => 0.2 ),
             waves  => [
-                Wave->new( frequency => 1.0, amplitude => 0.2, type => 'sin' ),
-                Wave->new( frequency => 2.0, amplitude => 0.1, type => 'cos' ),
-                Wave->new( frequency => 0.3, amplitude => 0.5, type => 'sin' ),
+                Wave->new( frequency => 0.9, amplitude => 0.2, type => 'sin' ),
+                Wave->new( frequency => 1.5, amplitude => 0.1, type => 'cos' ),
+                Wave->new( frequency => 0.3, amplitude => 0.3, type => 'sin' ),
                 Wave->new( frequency => 1.2, amplitude => 0.2, type => 'sin' ),
             ]
         );
@@ -79,9 +79,9 @@ my $s = Philo::Shader->new(
             height => $HEIGHT * 0.5,
             color  => Philo::Color->new( r => 0.1, g => 0.3, b => 0.5 ),
             waves  => [
-                Wave->new( frequency => 3.0, amplitude => 0.2, type => 'cos' ),
-                Wave->new( frequency => 2.0, amplitude => 0.5, type => 'cos' ),
-                Wave->new( frequency => 1.3, amplitude => 0.3, type => 'sin' ),
+                Wave->new( frequency => 0.3, amplitude => 0.5, type => 'cos' ),
+                Wave->new( frequency => 0.7, amplitude => 0.7, type => 'sin' ),
+                Wave->new( frequency => 0.5, amplitude => 0.8, type => 'sin' ),
             ]
         );
 
@@ -89,18 +89,20 @@ my $s = Philo::Shader->new(
             height => $HEIGHT * 0.5,
             color  => Philo::Color->new( r => 0.1, g => 0.5, b => 0.4 ),
             waves  => [
-                Wave->new( frequency => 3.0, amplitude => 0.9, type => 'cos' ),
-                Wave->new( frequency => 2.0, amplitude => 0.9, type => 'cos' ),
+                Wave->new( frequency => 3.0, amplitude => 0.9, type => 'sin' ),
+                Wave->new( frequency => 2.0, amplitude => 1.2, type => 'cos' ),
                 Wave->new( frequency => 1.3, amplitude => 0.9, type => 'sin' ),
             ]
         );
 
-        return $stripe if $p->y > 0.55 && $p->y < 0.57;
-        return $road   if $p->y > 0.40 && $p->y < 0.72;
+
+        return $stripe if $p->y > 0.55 && $p->y < 0.57
+                       && (((($p->x * $HEIGHT) / 8) + ($t * 10)) % 2) == 0;
+        return $road   if $p->y > 0.40 && $p->y < 0.73;
 
         return $ground if $p->y > 0.25;
 
-        if ( my $c = $m1->draw_at( $p, $t       ) ) { return $c }
+        if ( my $c = $m1->draw_at( $p, $t * 0.6 ) ) { return $c }
         if ( my $c = $m2->draw_at( $p, $t * 0.3 ) ) { return $c }
         if ( my $c = $m3->draw_at( $p, $t * 0.1 ) ) { return $c }
 
