@@ -27,28 +27,34 @@ my $s = Philo::Shader->new(
     }
 );
 
-my $frames = 0;
-my $start  = time;
+sub run_shader ($s, $delay=undef) {
 
-$SIG{INT} = sub {
-    my $dur = time - $start;
-    my $fps = $frames / $dur;
+    my $frames = 0;
+    my $start  = time;
+
+    $SIG{INT} = sub {
+        $s->show_cursor;
+        die "Interuptted!";
+    };
+
+    $s->clear_screen;
+    $s->hide_cursor;
+
+    my $t = 0;
+    while (1) {
+        my $t = time;
+        $s->draw( $t );
+        my $d = (time() - $t);
+        say "avg fps  : " . $frames / ($t - $start);
+        say "cur fps  : " . (1 / $d);
+        say "duration : " . $d;
+        say "frames   : " . $frames++;
+        say "now      : " . $t;
+        sleep( $delay ) if $delay;
+    }
+
     $s->show_cursor;
-
-    say "\n\nInteruptted!";
-    say "Frames: $frames time: $dur fps: $fps";
-    die "Goodbye";
-};
-
-$s->clear_screen;
-$s->hide_cursor;
-
-my $t = 0;
-while (1) {
-    $s->draw( time );
-    $frames++;
-    last if $frames == 500;
 }
 
-$s->show_cursor;
+run_shader( $s );
 
