@@ -11,8 +11,8 @@ use Data::Dumper;
 
 use Philo;
 
-my $HEIGHT = 120;
-my $WIDTH  = 160;
+my $HEIGHT = 80;
+my $WIDTH  = 80;
 
 # detect if we intersect with the function
 sub intersect ($x_pos, $y_pos) {

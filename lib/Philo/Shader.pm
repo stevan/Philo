@@ -29,8 +29,8 @@ class Philo::Shader {
         $width  > 0           || confess 'The `width` must be a greater than 0';
         ref $shader eq 'CODE' || confess 'The `shader` must be a CODE ref';
 
-        $height += 1 if $height % 2 == 0;
-        $width  += 1 if $width  % 2 == 0;
+        $height -= 1 if $height % 2 == 0;
+        $width  -= 1 if $width  % 2 == 0;
 
         $newline = "\e[B\e[".($width+1)."D";
 
@@ -52,6 +52,9 @@ class Philo::Shader {
             }
         }
     }
+
+    method rows { $height }
+    method cols { $width  }
 
     my $RESET       = "\e[0m";
     my $HOME_CURSOR = "\e[H";
