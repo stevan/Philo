@@ -101,13 +101,12 @@ sub run_shader ($s, $delay=undef) {
     while (1) {
         my $t = time;
         $s->draw( $t );
-        my $d = (time() - $t);
-        say "avg fps  : " . $frames / ($t - $start);
-        say "cur fps  : " . (1 / $d);
-        say "duration : " . $d;
-        say "frames   : " . $frames++;
-        say "now      : " . $t;
         sleep( $delay ) if $delay;
+        my $d = (time() - $t);
+        say "frame    : " . $frames++;
+        say "fps      : " . $frames / ($t - $start);
+        say "duration : " . $d;
+        say "elapsed  : " . ($t - $start);
     }
 
     $s->show_cursor;

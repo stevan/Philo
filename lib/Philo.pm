@@ -40,6 +40,4 @@ use roles ();
 use Philo::Roles::Drawable;
 use Philo::Roles::Oriented;
 
-1;
-
 __END__

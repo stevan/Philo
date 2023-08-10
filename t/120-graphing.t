@@ -5,11 +5,10 @@ use experimental qw[ class try builtin ];
 use builtin      qw[ ceil floor ];
 
 use Time::HiRes qw[ sleep time ];
-use List::Util  qw[ min max ];
-use Math::Trig;
 use Data::Dumper;
 
 use Philo;
+use Philo::Tools::Shaders;
 
 my $HEIGHT = 80;
 my $WIDTH  = 80;
@@ -18,21 +17,6 @@ my $WIDTH  = 80;
 sub intersect ($x_pos, $y_pos) {
     state $h = $HEIGHT * 0.25; # because we doubled the size of the screen below ...
     return ceil(-$x_pos * $h) == ceil($y_pos * $h);
-}
-
-# clamp values between min/max
-sub clamp ($min, $max, $val) {
-    return max( $min, min( $max, $val ) );
-}
-
-# this is a smoothing function
-sub smooth ($x) {
-    return ($x ** 2) * (3 - (2 * $x))
-}
-
-# smooth a clamped step with two independent thresholds
-sub smoothstep ( $t1, $t2, $x ) {
-    return smooth( clamp( 0, 1, (($x - $t1) / ($t2 - $t1)) ) );
 }
 
 my $s = Philo::Shader->new(
@@ -90,13 +74,12 @@ sub run_shader ($s, $delay=undef) {
     while (1) {
         my $t = time;
         $s->draw( $t );
-        my $d = (time() - $t);
-        say "avg fps  : " . $frames / ($t - $start);
-        say "cur fps  : " . (1 / $d);
-        say "duration : " . $d;
-        say "frames   : " . $frames++;
-        say "now      : " . $t;
         sleep( $delay ) if $delay;
+        my $d = (time() - $t);
+        say "frame    : " . $frames++;
+        say "fps      : " . $frames / ($t - $start);
+        say "duration : " . $d;
+        say "elapsed  : " . ($t - $start);
     }
 
     $s->show_cursor;

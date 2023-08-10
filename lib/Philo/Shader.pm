@@ -66,7 +66,11 @@ class Philo::Shader {
     method enable_alt_buffer  { print "\e[?1049h"  }
     method disable_alt_buffer { print "\e[?1049l"  }
 
+    #use Time::HiRes qw[ time ];
+
     method draw ($t) {
+
+        #my $start = time;
 
         my @out;
         foreach my ($y1, $y2) ( @rows ) {
@@ -79,7 +83,15 @@ class Philo::Shader {
             $newline);
         }
 
+        #my $end = time - $start;
+
+        #my $startp = time;
+
         print join '' => ($HOME_CURSOR, @out, $RESET);
+
+        #my $endp = time - $startp;
+
+        #return ($end, $endp);
     }
 
 }
