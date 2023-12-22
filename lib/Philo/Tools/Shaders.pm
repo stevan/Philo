@@ -2,7 +2,7 @@ package Philo::Tools::Shaders;
 use v5.38;
 
 use List::Util qw[ min max ];
-use Math::Trig qw[ atan ];
+#use Math::Trig ();
 
 use Exporter 'import';
 
@@ -12,6 +12,7 @@ our @EXPORT = qw[
     clamp
     smooth
     smoothstep
+    mix
     min
     max
 ];
@@ -36,5 +37,14 @@ sub smoothstep ( $t1, $t2, $x ) {
     my $v = max( 0, min( 1, (($x - $t1) / ($t2 - $t1)) ) );
     return ($v ** 2) * (3 - (2 * $v));
 }
+
+sub mix ($start, $end, $v) {
+    my $steps = $end - $start;
+    my $ratio = $v / $steps;
+    return $end   if $ratio > 1;
+    return $start if $ratio < 0;
+    return ($start + ($ratio * $steps)),
+}
+
 
 __END__

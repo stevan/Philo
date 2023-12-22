@@ -10,8 +10,8 @@ use Data::Dumper;
 use Philo;
 use Philo::Tools::Shaders;
 
-my $HEIGHT = 100;
-my $WIDTH  = 100;
+my $HEIGHT = 50;
+my $WIDTH  = 50;
 
 
 sub Hash12 ($t) {

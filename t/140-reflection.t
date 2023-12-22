@@ -10,8 +10,8 @@ use Data::Dumper;
 use Philo;
 use Philo::Tools::Shaders;
 
-my $HEIGHT = 100;
-my $WIDTH  = 100;
+my $HEIGHT = 80;
+my $WIDTH  = 80;
 
 class Wave {
     use Math::Trig;

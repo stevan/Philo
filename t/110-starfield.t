@@ -177,7 +177,7 @@ class Spaceship {
 
 class Animation :isa(Stella::Actor) {
     use Data::Dumper;
-    use Stella::Util::Debug;
+    use Stella::Tools::Debug;
 
     use Time::HiRes qw[ time ];
 
@@ -194,7 +194,7 @@ class Animation :isa(Stella::Actor) {
     field $logger;
 
     ADJUST {
-        $logger = Stella::Util::Debug->logger if LOG_LEVEL;
+        $logger = Stella::Tools::Debug->logger if LOG_LEVEL;
 
         # Create the Spaceship Sprite
         $spaceship = Spaceship->new(
@@ -281,7 +281,12 @@ class Animation :isa(Stella::Actor) {
 }
 
 sub init ($ctx) {
-    my $Animation = $ctx->spawn( Animation->new( height => $HEIGHT, width => $WIDTH ) );
+    my $Animation = $ctx->spawn(
+        Stella::ActorProps->new(
+            class => 'Animation',
+            args  => { height => $HEIGHT, width => $WIDTH }
+        )
+    );
     $ctx->send( $Animation, Stella::Event->new( symbol => *Animation::Start ) );
 }
 

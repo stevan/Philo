@@ -144,6 +144,6 @@ sub run_shader ($s, $delay=undef) {
     $s->disable_alt_buffer;
 }
 
-run_shader( $s );
+run_shader( $s, 0.01 );
 
 
